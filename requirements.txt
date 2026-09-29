@@ -1,0 +1,20 @@
+# HySI-SAT (ThesisSARXSAT) — verified against pythonfiles/*.pyx imports
+# Target interpreter: Python 3.10.x 
+#
+# numpy MUST stay < 1.24: LinProg.pyx, QuadProg.pyx, Sparsification.pyx and
+# model.pyx all use the deprecated `np.int` alias, removed in numpy 1.24.
+numpy==1.23.5
+scipy==1.10.1
+matplotlib==3.7.5
+scikit-learn==1.3.2
+PyQt5==5.15.11
+z3-solver==4.13.0.0
+pplpy==0.8.10
+cplex==22.2.0.1
+
+# Build tooling — pin Cython <3 to match the 0.29-era syntax the .pyx files
+# were originally written against (Cython 3.x changed default language_level
+# semantics and can be pickier about older code).
+Cython==0.29.36
+setuptools
+wheel

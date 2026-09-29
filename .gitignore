@@ -1,0 +1,10 @@
+# Compiled Cython extension modules (rebuild with: python setup_cython.py build_ext --inplace)
+*.so
+
+# Intermediate build output from setuptools
+build/lib.*/
+build/temp.*/
+
+# Python caches
+__pycache__/
+*.pyc
