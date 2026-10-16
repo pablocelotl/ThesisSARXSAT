@@ -12,20 +12,27 @@ from pathlib import Path
 import numpy as np
 import scipy.io as sio
 
-p = argparse.ArgumentParser()
-p.add_argument("file")
-p.add_argument("--channels", help="comma-separated channel indices (default: all)")
-p.add_argument("--start", type=int, default=0)
-p.add_argument("--length", type=int, help="number of samples to use (default: all)")
-args = p.parse_args()
 
-x = sio.loadmat(args.file)["ECOG"]
-if args.channels:
-    x = x[[int(c) for c in args.channels.split(",")]]
-end = args.start + args.length if args.length else x.shape[1]
-x = x[:, args.start:end]
+def write_io_dataset(x, name):
+    """Write x (signals x samples) to {name}_output.txt plus a matching all-zero {name}_input_dummy.txt."""
+    np.savetxt(f"{name}_output.txt", x, fmt="%f", delimiter=",")
+    np.savetxt(f"{name}_input_dummy.txt", np.zeros((1, x.shape[1])), fmt="%f", delimiter=",")
+    print(f"Wrote {name}_output.txt ({x.shape[0]} channels x {x.shape[1]} samples) and {name}_input_dummy.txt")
 
-name = f"Data/{Path(args.file).stem}"
-np.savetxt(f"{name}_output.txt", x, fmt="%f", delimiter=",")
-np.savetxt(f"{name}_input_dummy.txt", np.zeros((1, x.shape[1])), fmt="%f", delimiter=",")
-print(f"Wrote {name}_output.txt ({x.shape[0]} channels x {x.shape[1]} samples) and {name}_input_dummy.txt")
+
+if __name__ == "__main__":
+    p = argparse.ArgumentParser()
+    p.add_argument("file")
+    p.add_argument("--channels", help="comma-separated channel indices (default: all)")
+    p.add_argument("--start", type=int, default=0)
+    p.add_argument("--length", type=int, help="number of samples to use (default: all)")
+    args = p.parse_args()
+
+    x = sio.loadmat(args.file)["ECOG"]
+    if args.channels:
+        x = x[[int(c) for c in args.channels.split(",")]]
+    end = args.start + args.length if args.length else x.shape[1]
+    x = x[:, args.start:end]
+
+    name = f"Data/{Path(args.file).stem}"
+    write_io_dataset(x, name)
