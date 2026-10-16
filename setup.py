@@ -2,8 +2,7 @@
 #
 # Still under heavy development. Use at your own risk.
 import numpy
-from setuptools import setup
-from distutils.extension import Extension
+from setuptools import setup, Extension
 
 setup(  name='SarxIdent',
         version='0.1',

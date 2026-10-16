@@ -2,8 +2,7 @@
 #
 # Still under heavy development. Use at your own risk.
 import numpy
-from distutils.core import setup
-from distutils.extension import Extension
+from setuptools import setup, Extension
 from Cython.Build import cythonize
 extensions = [
 
@@ -12,6 +11,7 @@ extensions = [
     ]
 setup(
     name="SSHIP",
-    ext_modules=cythonize(extensions,build_dir="build"),
+    ext_modules=cythonize(extensions, build_dir="build",
+                          compiler_directives={"language_level": "3"}),
 )
 
