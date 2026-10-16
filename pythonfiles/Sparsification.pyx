@@ -6,9 +6,9 @@ cimport numpy as np
 import logging
 import itertools
 import random
-DTYPE = np.int
+DTYPE = np.int64
 FTYPE=  np.double
-ctypedef np.int_t DTYPE_t
+ctypedef np.int64_t DTYPE_t
 ctypedef np.double_t FTYPE_t
 
 cpdef minimizeL1(regressor, int ny, int nu, double delta, output,

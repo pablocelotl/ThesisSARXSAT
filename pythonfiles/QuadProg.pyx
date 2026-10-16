@@ -1,9 +1,9 @@
 import cplex
 import numpy as np
 cimport numpy as np
-DTYPE = np.int
+DTYPE = np.int64
 FTYPE=  np.double
-ctypedef np.int_t DTYPE_t
+ctypedef np.int64_t DTYPE_t
 ctypedef np.double_t FTYPE_t
 from cplex.exceptions import CplexError
 
