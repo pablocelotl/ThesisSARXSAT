@@ -12,7 +12,7 @@ cpdef mesh(np.ndarray X):
     return xx,yy
 
 def heightmap(xx,yy,H,int modes):
-    cpdef np.ndarray Z=np.zeros((len(xx[:,0]),len(xx[0,:])))
+    cdef np.ndarray Z=np.zeros((len(xx[:,0]),len(xx[0,:])))
     for i in range(len(xx[:,0])):
         for j in range(len(xx[0,:])):
             for k in range(modes):

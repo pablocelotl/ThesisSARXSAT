@@ -34,10 +34,10 @@ cpdef intersect(np.ndarray group_1,np.ndarray group_2,delta):
     """
     group_1=group_1[:,:-1]
     group_2=group_2[:,:-1]
-    cpdef int status=1
-    cpdef list hull
-    cpdef list P
-    cpdef list Q
+    cdef int status=1
+    cdef list hull
+    cdef list P
+    cdef list Q
     if group_1.shape[0]>3:
         hull=list(ConvexHull(group_1).vertices)
         P=group_1[hull].tolist()
@@ -49,8 +49,8 @@ cpdef intersect(np.ndarray group_1,np.ndarray group_2,delta):
         Q=group_2[hull].tolist()
     else:
         Q=group_2.tolist()
-    cpdef int dimensions = len(P[0])
-    cpdef list D=[]
+    cdef int dimensions = len(P[0])
+    cdef list D=[]
 
     ## Create one variable per dimension
     for i in range(dimensions):
