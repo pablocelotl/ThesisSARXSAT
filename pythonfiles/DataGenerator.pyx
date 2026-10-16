@@ -91,10 +91,10 @@ cpdef generate(int T,int ny,int nu,int inputs,int outputs,double nt,int modes,in
             for j in range(modes):
                 er=np.dot(H[j], np.append(np.append(uy, ux), 1))
                 if (er<0).all():
-                    y[:, i] = np.dot(thetaR[j], np.append(uy, np.append(ux,1))) + float(nt * (np.random.rand(1) - 0.5))
+                    y[:, i] = np.dot(thetaR[j], np.append(uy, np.append(ux,1))) + float(nt * (np.random.rand() - 0.5))
                     n[i]=j+1
         else:
-            y[:, i] = np.dot(thetaR[n[i] - 1], np.append(uy, ux)) + float(nt * (np.random.rand(1) - 0.5))
+            y[:, i] = np.dot(thetaR[n[i] - 1], np.append(uy, ux)) + float(nt * (np.random.rand() - 0.5))
 
     with open("Data/TestfileInput.txt", "wb") as f:
         np.savetxt(f, u, fmt='%f9', delimiter=",")
