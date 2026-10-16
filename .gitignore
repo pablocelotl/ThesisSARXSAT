@@ -2,8 +2,12 @@
 *.so
 
 # Intermediate build output from setuptools
-build/lib.*/
-build/temp.*/
+build/
+
+#Generated data
+Data/ECoG*
+Data/sleep*
+Data/IdentifiedDatasets/*/
 
 # Python caches
 __pycache__/
