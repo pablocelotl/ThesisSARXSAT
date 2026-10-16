@@ -228,7 +228,7 @@ cpdef L1(list regressor, int ny, int nu, double delta, list output, int NOI,
             stuck=1
 
         ## Create regressor of datapoints that are not yet assigned to a model
-        r=np.array([regressor[k] for k in NT[-1]])
+        r=[regressor[k] for k in NT[-1]]
         y=[output[j] for j in NT[-1]]
 
         ## Break if all intervals are accounted for
@@ -310,7 +310,7 @@ cpdef modelForSmallestErrors(list Errors, r, int ny, int nu, double delta, y, in
     id=np.argpartition(E, k)
     id=id[:k]
     ix=[NError[a] for a in id]
-    r=np.array([r[k] for k in ix])
+    r=[r[k] for k in ix]
     y=[y[j] for j in ix]
     (pb,status)=weightedL1(r,ny,nu,delta,y,NOI,regc,[1]*len(ix),inputs,outputs)
     model.append(pb)
