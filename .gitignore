@@ -4,11 +4,22 @@
 # Intermediate build output from setuptools
 build/
 
-#Generated data
+# Generated data
 Data/ECoG*
 Data/sleep*
 Data/IdentifiedDatasets/*/
+DataOld.db
+DataSolved.txt
+InputOutput.txt
+Data/Testfile*.txt
 
 # Python caches
 __pycache__/
 *.pyc
+
+# Large raw recordings (keep local / back up outside git; GitHub rejects files >100 MB)
+Dataset/*.mat
+Example data pre-processing/*.mat
+
+# Crash logs from cysignals
+cysignals_crash_logs/
