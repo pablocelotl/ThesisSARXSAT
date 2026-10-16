@@ -12,6 +12,7 @@ import storage
 import time
 import export
 import partition
+import matplotlib
 import matplotlib.pyplot as plt
 from sys import stdout, stderr
 from io import StringIO
@@ -190,7 +191,7 @@ def main(self,gui,**kwargs):
 
         ## plot switching sequence in case of using the gui
         if not __name__ == '__main__' and gui:
-            cm = plt.cm.get_cmap('tab20')
+            cm = matplotlib.colormaps['tab20']
             self.ax_switching.clear()
             scatterplot=self.ax_switching.scatter(np.array(list(range(1,len(sigmat)+1))),sigmat,c=sigmat,s=200,marker='x')
             legend1=self.ax_switching.legend(*scatterplot.legend_elements(),
