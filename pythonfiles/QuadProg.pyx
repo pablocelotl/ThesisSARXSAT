@@ -57,25 +57,20 @@ cpdef populatebyrow(np.ndarray[FTYPE_t, ndim=2] output, np.ndarray[FTYPE_t, ndim
     my_ub = my_ub+[1000.0]*s
     my_lb = my_lb+[0.0]*s
 
-    ## Creating left side of constraints
-    cdef np.ndarray R=np.zeros((size,L),dtype=FTYPE)
-    for i in range(outputs):
-        R[i*s:(i+1)*s,i*l:(i+1)*l]=-regressor
-        R[(i+outputs)*s:(i+outputs+1)*s,i*l:(i+1)*l]=regressor
-    cdef list cons = R.tolist()
-
-    R=np.hstack((R,np.tile(-np.identity(s),(2*outputs,1))))
+    ## Creating left side of constraints in sparse form (column indices + nonzero values):
+    # first -regressor for every output, then +regressor for every output,
+    # every row with -1 on the slack variable of its datapoint
+    cdef list rows=[]
+    cdef list ind
+    for cons in ((-regressor).tolist(), regressor.tolist()):
+        for i in range(outputs):
+            ind = list(range(i*l, (i+1)*l))
+            for z in range(s):
+                rows.append(cplex.SparsePair(ind=ind+[L+z], val=cons[z]+[-1.0]))
 
     ## constraint on s
-    R2=np.zeros((s,L),dtype=FTYPE)
-    R2=np.hstack((R2,np.identity(s)))
-    R3=np.vstack((R,R2))
-    cons=R3.tolist()
-
-    ## Adding names to the constraints (rows)
-    cdef list rows=[]
-    for z in range(size+s):
-        rows.append([my_colnames,cons[z]])
+    for z in range(s):
+        rows.append(cplex.SparsePair(ind=[L+z], val=[1.0]))
 
     ## creating qmatrix
     qmat=[]

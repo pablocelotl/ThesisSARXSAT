@@ -30,8 +30,8 @@ cpdef minimizeL1(regressor, int ny, int nu, double delta, output,
         status {list} -- Status
     """
     ##typecasting
-    cdef int i, j, k, n, z
-    cdef np.ndarray[dtype=FTYPE_t,ndim=2] c1, c2, c, cons, q, qmimo, qt, nt
+    cdef int i, j, k, m
+    cdef double s
     ## initializing the problem and turning of printing to screen
     prob = cplex.Cplex()
     prob.set_log_stream(None)
@@ -64,40 +64,23 @@ cpdef minimizeL1(regressor, int ny, int nu, double delta, output,
     cdef list my_rownames = ["c{0}".format(i) for i in range(1,size+1)]
     cdef list my_sense = ["L"] * size
 
-    ## Creating constraint matrix
-    c1=np.hstack((np.zeros((NOP,NOPV)),-np.identity(NOP),np.zeros((NOP,NOP*NOPV))))
-    c2=np.hstack((np.zeros((NOP,NOPV)),np.identity(NOP),np.zeros((NOP,NOP*NOPV))))
-    c=np.vstack((c1,c2))
-    cons=np.tile(c,(NOPV,1))
-    
+    ## Creating the constraint rows in sparse form (column indices + nonzero values).
+    # A dense matrix of this LP grows with (number of intervals x number of samples)
+    # and runs out of memory on large datasets.
+    ## Constraints linking each parameter vector p_k to the reference pb via z_k:
+    # first NOP rows -pb + p_k - z_k <= 0, next NOP rows pb - p_k - z_k <= 0
+    for k in range(NOPV):
+        for s in (-1.0, 1.0):
+            for m in range(NOP):
+                rows.append(cplex.SparsePair(ind=[k, NOPV+m, (k+1)*NOP+NOPV+m], val=[-1.0, s, -s]))
 
-    for k in range (0,NOPV):
-        n=k*2
-        cons[n*NOP:n*NOP+NOP,(k+1)*NOP+NOPV:(k+2)*NOP+NOPV]=np.identity(NOP)
-        cons[(n+1)*NOP:(n+1)*NOP+NOP,(k+1)*NOP+NOPV:(k+2)*NOP+NOPV]=-np.identity(NOP)
-
-        cons[n*NOP:n*NOP+NOP,k]=-1
-        cons[(n+1)*NOP:(n+1)*NOP+NOP,k]=-1
-
-    
     ## Creating constraints for the noise description
-    qmimo=np.empty((0,(1+NOPV)*NOP+NOPV), float)
     for i in range(outputs):
-        q= np.empty((0,(1+NOPV)*NOP+NOPV), float)
         for j in range(len(regressor)):
-            nt=np.zeros((len(regressor[j]),NOP))
-            nt[:,i*rlen:(i+1)*rlen]=regressor[j]
-            qt=np.zeros((2*len(regressor[j]),(1+NOPV)*NOP+NOPV))
-            qt[:len(regressor[j]),(1+j)*NOP+NOPV:(2+j)*NOP+NOPV]=-nt
-            qt[len(regressor[j]):,(1+j)*NOP+NOPV:(2+j)*NOP+NOPV]=nt
-            q=np.vstack((q,qt))
-        qmimo=np.vstack((qmimo,q))
-
-    cdef list cons_list=np.vstack((cons,qmimo)).tolist()
-
-    ## Creating the total contraint matrix (rows)
-    for z in range(len(cons_list)):
-        rows.append([my_colnames,cons_list[z]])
+            reg = np.asarray(regressor[j], dtype=float)
+            ind = list(range((1+j)*NOP+NOPV+i*rlen, (1+j)*NOP+NOPV+(i+1)*rlen))
+            for vals in (-reg).tolist() + reg.tolist():
+                rows.append(cplex.SparsePair(ind=ind, val=vals))
 
     prob.objective.set_sense(prob.objective.sense.minimize)
     prob.variables.add(obj=my_obj, lb=my_lb, ub=my_ub, names=my_colnames)

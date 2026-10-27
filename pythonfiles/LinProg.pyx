@@ -58,22 +58,19 @@ cpdef populatebyrow(np.ndarray[FTYPE_t, ndim=2] output, np.ndarray[FTYPE_t, ndim
         my_ub = my_ub+[0.0]*s
         my_lb = my_lb+[-delta]*s
 
-    ## Creating left side of constraints
-    cdef np.ndarray R=np.zeros((size,L),dtype=FTYPE)
-    for i in range(outputs):
-        R[i*s:(i+1)*s,i*l:(i+1)*l]=-regressor
-        R[(i+outputs)*s:(i+outputs+1)*s,i*l:(i+1)*l]=regressor
-    cdef list cons = R.tolist()
-
-    ## Change regressor when minimizing with slack variables
-    if slack:
-        R=np.hstack((R,np.tile(-np.identity(s),(2*outputs,1))))
-        cons=R.tolist()
-
-    ## Adding names to the constraints (rows)
+    ## Creating left side of constraints in sparse form (column indices + nonzero values):
+    # first -regressor for every output, then +regressor for every output.
+    # With slack variables, every row also gets -1 on the slack variable of its datapoint.
     cdef list rows=[]
-    for z in range(size):
-        rows.append([my_colnames,cons[z]])
+    cdef list ind
+    for cons in ((-regressor).tolist(), regressor.tolist()):
+        for i in range(outputs):
+            ind = list(range(i*l, (i+1)*l))
+            for z in range(s):
+                if slack:
+                    rows.append(cplex.SparsePair(ind=ind+[L+z], val=cons[z]+[-1.0]))
+                else:
+                    rows.append(cplex.SparsePair(ind=ind, val=cons[z]))
 
     ## Add the required information to Cplex and solve the problem    
     prob.objective.set_sense(prob.objective.sense.minimize)
