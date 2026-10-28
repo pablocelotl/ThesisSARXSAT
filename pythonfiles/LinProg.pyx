@@ -26,6 +26,19 @@ cpdef populatebyrow(np.ndarray[FTYPE_t, ndim=2] output, np.ndarray[FTYPE_t, ndim
         status {list} -- Status of the minimization problem
     """
 
+    ## Without slack variables every output only constrains its own parameters, so the problem
+    # splits into one independent LP per output: feasible exactly when all of them are
+    cdef list sol_all
+    cdef int o
+    if not slack and outputs > 1:
+        sol_all = []
+        for o in range(outputs):
+            (sol, status) = populatebyrow(output[o:o+1], regressor, delta, ny, nu, inputs, 1, False)
+            if status != 1:
+                return([], 3)
+            sol_all += sol
+        return(sol_all, 1)
+
     ## Initializing the problem and turning of printing to screen
     prob = cplex.Cplex()
     prob.set_log_stream(None)
