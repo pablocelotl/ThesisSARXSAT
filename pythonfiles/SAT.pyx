@@ -121,7 +121,29 @@ cpdef satisfying(int Td, int dwell, int ny, list certificate, int pwarx, list pw
 
     s = Solver()
 
-    if pwarx!=1:
+    if pwarx!=1 and T*dwell > 10000000:
+    ## Adding Dwell time constraint, linear-size version for large problems.
+        # The clauses below list dwell-1 Booleans for every k, which grows as T*dwell and does not
+        # fit in memory for long dwell times. Equivalent: split time into chunks of dwell samples;
+        # P[k] is true if there is a switch from the start of k's chunk up to k, S[k] if there is
+        # one from k up to the end of its chunk. The dwell-1 samples after k cover the rest of k's
+        # chunk (S[k+1]) and the start of the next chunk (P[k+dwell-1]).
+        # Small problems keep the original clauses so their results stay the same.
+        P = [Bool('p{}'.format(k)) for k in range(T)]
+        S = [Bool('q{}'.format(k)) for k in range(T)]
+        for k in range(T):
+            s.add(Or(Not(b[k]), P[k]))
+            s.add(Or(Not(b[k]), S[k]))
+            if k % dwell != 0:
+                s.add(Or(Not(P[k-1]), P[k]))
+            if (k+1) % dwell != 0 and k+1 < T:
+                s.add(Or(Not(S[k+1]), S[k]))
+        for k in range(T):
+            if (k+1) % dwell != 0 and k+1 < T:
+                s.add(Or(Not(b[k]), Not(S[k+1])))
+            if k % dwell != 0 and (k//dwell+1)*dwell < T:
+                s.add(Or(Not(b[k]), Not(P[min(k+dwell-1, T-1)])))
+    elif pwarx!=1:
     ## Adding Dwell time constraint
         for k in range(0,len(b)):
             if (k+dwell-1<len(b)):
