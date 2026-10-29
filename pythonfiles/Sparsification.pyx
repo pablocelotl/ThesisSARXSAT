@@ -11,6 +11,16 @@ FTYPE=  np.double
 ctypedef np.int64_t DTYPE_t
 ctypedef np.double_t FTYPE_t
 
+cdef int ROW_CHUNK = 20000
+
+cdef int add_rows(prob, list rows, list senses, list rhs, list names, int added):
+    """Add rows (the next constraints, in order) to the Cplex problem and return the new row count.
+    Adding constraints a chunk at a time keeps Cplex's temporary copy of them small."""
+    cdef int n = len(rows)
+    prob.linear_constraints.add(lin_expr=rows, senses=senses[added:added+n],
+                                rhs=rhs[added:added+n], names=names[added:added+n])
+    return added + n
+
 cpdef minimizeL1(regressor, int ny, int nu, double delta, output,
                 weights, int inputs, int outputs):
     """Calls Cplex
@@ -69,10 +79,16 @@ cpdef minimizeL1(regressor, int ny, int nu, double delta, output,
     # and runs out of memory on large datasets.
     ## Constraints linking each parameter vector p_k to the reference pb via z_k:
     # first NOP rows -pb + p_k - z_k <= 0, next NOP rows pb - p_k - z_k <= 0
+    prob.objective.set_sense(prob.objective.sense.minimize)
+    prob.variables.add(obj=my_obj, lb=my_lb, ub=my_ub, names=my_colnames)
+    cdef int added = 0
     for k in range(NOPV):
         for s in (-1.0, 1.0):
             for m in range(NOP):
                 rows.append(cplex.SparsePair(ind=[k, NOPV+m, (k+1)*NOP+NOPV+m], val=[-1.0, s, -s]))
+                if len(rows) == ROW_CHUNK:
+                    added = add_rows(prob, rows, my_sense, my_rhs, my_rownames, added)
+                    rows = []
 
     ## Creating constraints for the noise description
     for i in range(outputs):
@@ -81,14 +97,15 @@ cpdef minimizeL1(regressor, int ny, int nu, double delta, output,
             ind = list(range((1+j)*NOP+NOPV+i*rlen, (1+j)*NOP+NOPV+(i+1)*rlen))
             for vals in (-reg).tolist() + reg.tolist():
                 rows.append(cplex.SparsePair(ind=ind, val=vals))
+                if len(rows) == ROW_CHUNK:
+                    added = add_rows(prob, rows, my_sense, my_rhs, my_rownames, added)
+                    rows = []
+    add_rows(prob, rows, my_sense, my_rhs, my_rownames, added)
 
-    prob.objective.set_sense(prob.objective.sense.minimize)
-    prob.variables.add(obj=my_obj, lb=my_lb, ub=my_ub, names=my_colnames)
-    prob.linear_constraints.add(lin_expr=rows, senses=my_sense,
-                                rhs=my_rhs, names=my_rownames)
-
-    ## Choose Solver (optional)                          
-    #prob.parameters.lpmethod.set(prob.parameters.lpmethod.values.dual)
+    ## Choose Solver: on large problems CPLEX's default (concurrent, including barrier) runs out
+    # of memory, dual simplex does not. Small problems keep the default so their results stay the same.
+    if size > 100000:
+        prob.parameters.lpmethod.set(prob.parameters.lpmethod.values.dual)
 
     ##Solve the problem and return the solution
     prob.solve()

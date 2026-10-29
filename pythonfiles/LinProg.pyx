@@ -27,13 +27,15 @@ cpdef populatebyrow(np.ndarray[FTYPE_t, ndim=2] output, np.ndarray[FTYPE_t, ndim
     """
 
     ## Without slack variables every output only constrains its own parameters, so the problem
-    # splits into one independent LP per output: feasible exactly when all of them are
+    # splits into one independent LP per output: feasible exactly when all of them are.
+    # With slack variables the outputs share the slacks, which does not fit in memory on large
+    # problems, so those are split too, each output with its own slacks.
     cdef list sol_all
     cdef int o
-    if not slack and outputs > 1:
+    if outputs > 1 and (not slack or output.shape[1]*2*outputs > 100000):
         sol_all = []
         for o in range(outputs):
-            (sol, status) = populatebyrow(output[o:o+1], regressor, delta, ny, nu, inputs, 1, False)
+            (sol, status) = populatebyrow(output[o:o+1], regressor, delta, ny, nu, inputs, 1, slack)
             if status != 1:
                 return([], 3)
             sol_all += sol
@@ -90,6 +92,10 @@ cpdef populatebyrow(np.ndarray[FTYPE_t, ndim=2] output, np.ndarray[FTYPE_t, ndim
     prob.variables.add(obj=my_obj, lb=my_lb, ub=my_ub, names=my_colnames)
     prob.linear_constraints.add(lin_expr=rows, senses=my_sense,
                                 rhs=my_rhs, names=my_rownames)
+    ## On large problems CPLEX's default LP method runs out of memory, dual simplex does not.
+    # Small problems keep the default so their results stay the same.
+    if size > 100000:
+        prob.parameters.lpmethod.set(prob.parameters.lpmethod.values.dual)
     prob.solve()
 
     ## Return the model and the status

@@ -26,6 +26,20 @@ cpdef populatebyrow(np.ndarray[FTYPE_t, ndim=2] output, np.ndarray[FTYPE_t, ndim
         status {list} -- Status of the minimization problem
     """
 
+    ## The outputs share the slack variables, which does not fit in memory on large problems,
+    # so those are split into one QP per output, each with its own slacks.
+    # Small problems keep the joint QP so their results stay the same.
+    cdef list sol_all
+    cdef int o
+    if outputs > 1 and output.shape[1]*(2*outputs+1) > 100000:
+        sol_all = []
+        for o in range(outputs):
+            (sol, status) = populatebyrow(output[o:o+1], regressor, delta, ny, nu, inputs, 1)
+            if status != 1:
+                return([],3)
+            sol_all += sol
+        return(sol_all, 1)
+
     ## Initializing the problem and turning of printing to screen
     prob = cplex.Cplex()
     prob.set_log_stream(None)
@@ -86,6 +100,10 @@ cpdef populatebyrow(np.ndarray[FTYPE_t, ndim=2] output, np.ndarray[FTYPE_t, ndim
     prob.linear_constraints.add(lin_expr=rows, senses=my_sense,
                                 rhs=my_rhs, names=my_rownames)
     prob.objective.set_quadratic(qmat)
+    ## On large problems CPLEX's default QP method (barrier) runs out of memory, dual simplex does not.
+    # Small problems keep the default so their results stay the same.
+    if size+s > 100000:
+        prob.parameters.qpmethod.set(prob.parameters.qpmethod.values.dual)
     prob.solve()
 
     ## Return the model and the status
