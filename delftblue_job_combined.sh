@@ -7,7 +7,7 @@
 
 #SBATCH --job-name=hysisat_comb
 #SBATCH --partition=compute-p1
-#SBATCH --account=education-me-msc-sc
+#SBATCH --account=education-me-msc-ro
 #SBATCH --time=24:00:00
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4

@@ -12,6 +12,7 @@ DataOld.db
 DataSolved.txt
 InputOutput.txt
 Data/Testfile*.txt
+results/
 
 # Python caches
 __pycache__/

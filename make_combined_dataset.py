@@ -4,11 +4,13 @@ The box signals (one row per box, from make_video_dataset.py) are linearly inter
 frame k is placed at LFP sample offset + 20*k, and the 19 samples between two frames lie on the
 straight line between them. Only the time span covered by both recordings is kept. The output file
 has the box rows first (in the order of the _boxes.txt file), then the hippocampal channels.
+With --lfp-groups N the hippocampal channels are first clustered into N groups of highly
+correlated channels (lfp_groups.py), and every group is replaced by the mean of its channels.
 A matching all-zero dummy input is written too, as with make_io_dataset.py; use it with nu = 0.
 
 Usage:
     python make_combined_dataset.py Data/sleep_video_grid8x5_output.txt \
-        "Example data pre-processing/hpc_filtered.mat" --zscore --length 2000
+        "Example data pre-processing/hpc_filtered.mat" --zscore --length 2000 --lfp-groups 3
 """
 import argparse
 from pathlib import Path
@@ -16,6 +18,7 @@ from pathlib import Path
 import numpy as np
 import scipy.io as sio
 
+from lfp_groups import describe_groups, group_lfp_channels
 from make_io_dataset import write_io_dataset
 
 p = argparse.ArgumentParser()
@@ -30,6 +33,8 @@ p.add_argument("--start", type=int, default=0, help="first sample of the combine
 p.add_argument("--length", type=int, help="number of 1 kHz samples to keep (default: all)")
 p.add_argument("--zscore", action="store_true",
                help="normalize every signal to zero mean and unit std (the LFP is ~1000x larger than the boxes)")
+p.add_argument("--lfp-groups", type=int,
+               help="replace the LFP channels by the means of this many groups of correlated channels")
 p.add_argument("--name", help="output name in Data/ (default: <boxes name>_hpc_1kHz)")
 args = p.parse_args()
 
@@ -41,6 +46,11 @@ ratio = int(ratio)
 boxes = np.loadtxt(args.boxes, delimiter=",", ndmin=2)
 hpc = np.stack([np.asarray(ch, dtype=float).ravel()
                 for ch in sio.loadmat(args.hpc, squeeze_me=True)[args.hpc_key]])
+if args.lfp_groups:
+    # groups are found on the whole recording, before cutting out the requested range
+    groups, grouped = group_lfp_channels(list(hpc), args.lfp_groups)
+    describe_groups(list(hpc), groups)
+    hpc = grouped
 
 # LFP sample index of every video frame, and the span covered by both recordings
 frame_t = args.offset + ratio * np.arange(boxes.shape[1])

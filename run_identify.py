@@ -26,7 +26,7 @@ p.add_argument("--output", required=True, help="output file (one comma-separated
 p.add_argument("--nu", type=int, default=1, help="input lags")
 p.add_argument("--ny", type=int, default=1, help="output lags")
 p.add_argument("--dw", type=int, default=15, help="minimum dwell time")
-p.add_argument("--delta", type=float, default=0.1, help="noise bound")
+p.add_argument("--delta", type=float, default=0.2, help="noise bound")
 p.add_argument("--blocks", type=int, default=1, help="number of data blocks")
 p.add_argument("--no-split", action="store_true", help="do not split large datasets")
 p.add_argument("--pwarx", action="store_true", help="identify a PWARX instead of a SARX model")
